@@ -20,4 +20,4 @@
 import service
 
 
-service.turkcealtyazi("KODI / XBMC Turkcealtyazi Subtitle Addon")
+service.subscene("KODI / XBMC Subscene Subtitle Addon")
