@@ -17,8 +17,8 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-import sublib
 import sublib.utils
+from sublib import service
 import defs
 
 import re
@@ -47,7 +47,7 @@ def similar(a, b, ratio):
     return rate * 100 >= ratio
 
 
-class subscene(sublib.service):
+class subscene(service):
 
     def search(self):
         if self.item.show and self.item.season:
@@ -59,7 +59,7 @@ class subscene(sublib.service):
         skip = False
         rank = 0
         if self.item.show:
-            title, show, season, episode = sublib.utils.infofromstr(name)
+            episode = sublib.utils.infofromstr(name)[3]
             if episode:
                 if self.item.episode == episode:
                     rank = 1
@@ -70,14 +70,15 @@ class subscene(sublib.service):
         return skip, rank
 
     def scrapepage(self, page):
-        rows = re.findall('<tr>\s+?<td class="a1">(.*?)</tr>', page, re.DOTALL)
+        rows = re.findall(r'<tr>\s+?<td class="a1">(.*?)</tr>', page, re.DOTALL)
         for row in rows:
-            link = re.search('<a href="(\/subtitles.*?)"', row)
-            rate_iso_name = re.search('<span class="l r (.+?)">\s*(.+?)\s*<\/span>\s+?<span>\s*(.+?)\s*?<\/span>', row, re.DOTALL)
-            files = re.search('<td class="a3">\s*([0-9]*)\s*<\/td>', row, re.DOTALL)
-            cc = re.search('<td class="a41">', row)
-            owner = re.search('<td class="a5">\s*(.*?)\s*<\/td>', row, re.DOTALL)
-            comment = re.search('<td class="a6">\s*<div>\s*(.*?)\s*<\/div>', row, re.DOTALL)
+            link = re.search(r'<a href="(\/subtitles.*?)"', row)
+            regstr = '<span class="l r (.+?)">\s*(.+?)\s*<\/span>\s+?<span>\s*(.+?)\s*?<\/span>'
+            rate_iso_name = re.search(regstr, row, re.DOTALL)
+            files = re.search(r'<td class="a3">\s*([0-9]*)\s*<\/td>', row, re.DOTALL)
+            cc = re.search(r'<td class="a41">', row)
+            owner = re.search(r'<td class="a5">\s*(.*?)\s*<\/td>', row, re.DOTALL)
+            comment = re.search(r'<td class="a6">\s*<div>\s*(.*?)\s*<\/div>', row, re.DOTALL)
             name = rate_iso_name.group(3)
             if comment:
                 name += ": %s" % striphtml(comment.group(1))
@@ -112,7 +113,7 @@ class subscene(sublib.service):
         poss.sort(reverse=True)
         for pos in poss:
             for link, name in titles:
-                year = re.search("\(([0-9]{4})\)", name)
+                year = re.search(r"\(([0-9]{4})\)", name)
                 # check if title has year info
                 if year:
                     year = year.group(1)
@@ -123,7 +124,7 @@ class subscene(sublib.service):
                 season = -1
                 # check if title has season info
                 for s, n in defs.nth.iteritems():
-                    sreg = re.search('(.*?)\s\-\s%s\sSeason' % n.title(), name)
+                    sreg = re.search(r'(.*?)\s\-\s%s\sSeason' % n.title(), name)
                     if sreg and sreg.lastindex == 1:
                         season = s
                         name = sreg.group(1).strip()
@@ -131,9 +132,9 @@ class subscene(sublib.service):
                         break
                 names = []
                 # check if title has alternative naming in (alternative name)
-                for n in re.findall("\((.+?)\)", name):
+                for n in re.findall(r"\((.+?)\)", name):
                     names.append(name.strip())
-                name = re.sub("\((.+?)\)", "", name)
+                name = re.sub(r"\((.+?)\)", "", name)
                 # check if title has alternative naming seperated with /
                 name = name.split("/")
                 name = [x.strip() for x in name]
